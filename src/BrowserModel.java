@@ -42,7 +42,7 @@ public class BrowserModel {
             myCurrentIndex++;
             return myHistory.get(myCurrentIndex);
         }
-        return null;
+        throw new BrowserException("couldn't go next");
     }
 
     /**
@@ -53,7 +53,7 @@ public class BrowserModel {
             myCurrentIndex--;
             return myHistory.get(myCurrentIndex);
         }
-        return null;
+        throw new BrowserException("couldn't go back");
     }
 
     /**
@@ -112,6 +112,10 @@ public class BrowserModel {
         }
     }
 
+    public Map<String, URL> getFavoriteList () {
+        return myFavorites;
+    }
+
     /**
      * Returns URL from favorites associated with given name, null if none set.
      */
@@ -119,7 +123,7 @@ public class BrowserModel {
         if (name != null && !name.equals("") && myFavorites.containsKey(name)) {
             return myFavorites.get(name);
         }
-        return null;
+        throw new BrowserException("favorite not found");
     }
 
     // deal with a potentially incomplete URL
@@ -127,7 +131,7 @@ public class BrowserModel {
         try {
             // try it as is
             return new URL(possible);
-        } catch (MalformedURLException e) {
+        } /*catch (MalformedURLException e) {
             try {
                 // try it as a relative link
                 // BUGBUG: need to generalize this :(
@@ -136,10 +140,10 @@ public class BrowserModel {
                 try {
                     // e.g., let user leave off initial protocol
                     return new URL(PROTOCOL_PREFIX + possible);
-                } catch (MalformedURLException eee) {
-                    return null;
-                }
-            }
+                }*/ catch (MalformedURLException eee) {
+                    throw new BrowserException("bad url");
+                //}
+            //}
         }
     }
 }

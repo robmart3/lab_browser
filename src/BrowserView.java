@@ -1,5 +1,6 @@
 import java.awt.Dimension;
 import java.net.URL;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import javafx.beans.value.ChangeListener;
@@ -47,6 +48,7 @@ public class BrowserView {
     // constants
     public static final Dimension DEFAULT_SIZE = new Dimension(800, 600);
     public static final String DEFAULT_RESOURCE_PACKAGE = "resources/";
+
     public static final String STYLESHEET = "default.css";
     public static final String BLANK = " ";
 
@@ -61,13 +63,14 @@ public class BrowserView {
     private Button myBackButton;
     private Button myNextButton;
     private Button myHomeButton;
+    private Button addFavorite;
     // favorites
     private ComboBox<String> myFavorites;
     // get strings from resource file
     private ResourceBundle myResources;
+    private ResourceBundle errorResources;
     // the data
     private BrowserModel myModel;
-
     /**
      * Create a view of the given model of a web browser.
      */
@@ -75,6 +78,7 @@ public class BrowserView {
         myModel = model;
         // use resources for labels
         myResources = ResourceBundle.getBundle(DEFAULT_RESOURCE_PACKAGE + language);
+        errorResources = ResourceBundle.getBundle(DEFAULT_RESOURCE_PACKAGE + "Errors");
         BorderPane root = new BorderPane();
         // must be first since other panels may refer to page
         root.setCenter(makePageDisplay());
@@ -84,20 +88,22 @@ public class BrowserView {
         enableButtons();
         // create scene to hold UI
         myScene = new Scene(root, DEFAULT_SIZE.width, DEFAULT_SIZE.height);
-        //myScene.getStylesheets().add(DEFAULT_RESOURCE_PACKAGE + STYLESHEET);
+        myScene.getStylesheets().add(DEFAULT_RESOURCE_PACKAGE + STYLESHEET);
     }
 
     /**
      * Display given URL.
      */
     public void showPage (String url) {
-        URL valid = myModel.go(url);
-        if (url != null) {
+        URL valid;
+        try {
+            valid = myModel.go(url);
             update(valid);
         }
-        else {
-            showError("Could not load " + url);
+        catch (BrowserException e){
+            System.out.println(String.format(errorResources.getString("URLErrorTitle"),url));
         }
+
     }
 
     /**
@@ -166,8 +172,8 @@ public class BrowserView {
 
     // only enable buttons when useful to user
     private void enableButtons () {
-        myBackButton.setDisable(! myModel.hasPrevious());
-        myNextButton.setDisable(! myModel.hasNext());
+        myBackButton.setDisable(!myModel.hasPrevious());
+        myNextButton.setDisable(!myModel.hasNext());
         myHomeButton.setDisable(myModel.getHome() == null);
     }
 
@@ -225,6 +231,20 @@ public class BrowserView {
             myModel.setHome();
             enableButtons();
         }));
+        result.getChildren().add(makeButton("AddFavoriteCommand", event -> {
+            addFavorite();
+            enableButtons();
+        }));
+        myFavorites = new ComboBox<String>();
+        Map<String, URL> map = myModel.getFavoriteList();
+        for (String key: map.keySet()){
+            myFavorites.getItems().add(key);
+        }
+        myFavorites.setValue("Favorite List");
+        myFavorites.setOnAction((event) -> {
+            showFavorite(myFavorites.getValue());
+        });
+        result.getChildren().add(myFavorites);
         return result;
     }
 
@@ -243,6 +263,8 @@ public class BrowserView {
             result.setText(label);
         }
         result.setOnAction(handler);
+
+
         return result;
     }
 
